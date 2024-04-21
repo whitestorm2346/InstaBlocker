@@ -16,9 +16,6 @@ AUTHENTICATE_URL = 'https://www.instagram.com/accounts/login/two_factor?hl=zh&ne
 ENGLISH = 'Times New Roman'
 CHINESE = '微軟正黑體'
 
-MY_USERNAME = 'andrew770426@gmail.com'
-MY_PASSWORD = 'Whitestorm2346'
-
 class MainUI:
     def __init__(self) -> None:
         self.init_main_frame()
@@ -97,9 +94,41 @@ class MainUI:
     def run(self) -> None:
         self.root.mainloop()
 
+class LoginForm:
+    def __init__(self) -> None:
+        self.username = ''
+        self.password = ''
+
+    def run(self):
+        pass
+
+class AuthenticateForm:
+    def __init__(self) -> None:
+        self.verify_code = ''
+
+    def run(self):
+        pass
+
+class BlockadeLogView:
+    def __init__(self) -> None:
+        pass
+
+    def run(self):
+        pass
+
 class InstaBlocker:
     def __init__(self) -> None:
-        self.__init_app__()
+        self.login_form = LoginForm()
+        self.authenticate_form = AuthenticateForm()
+        self.blockade_log_view = BlockadeLogView()
+
+        try:
+            self.data = pd.read_excel('qusun.ny-劣質粉絲名單.xlsx', header=7)
+        except Exception as e:
+            print('qusun.ny-劣質粉絲名單.xlsx not found')
+            exit(1)
+
+        self.namelist = self.data[self.data['評分'] <= -55][self.data.columns[1]].tolist()
 
     def start_driver(self) -> None:
         chrome_option = chromeOptions()
@@ -107,9 +136,6 @@ class InstaBlocker:
         chrome_option.add_argument('--start-maximized')
         chromedriver_autoinstaller.install()
         self.driver = webdriver.Chrome(options=chrome_option)
-
-    def __init_app__(self) -> None:
-        self.app = MainUI()
 
     def login(self, username, password) -> int:
         self.driver.get(INSTA_LOGIN_URL)
@@ -140,7 +166,8 @@ class InstaBlocker:
                 '/html/body/div[2]/div/div/div[2]/div/div/div[1]/section/main/div/div/div[1]/div[2]/form/div[1]/div/label/input')))
             verify_code_input.clear()
 
-            verify_code = input('輸入驗證碼: ')
+            self.authenticate_form.run()
+            verify_code = self.authenticate_form.verify_code
 
             verify_code_input.send_keys(verify_code)
         except Exception as e:
@@ -232,17 +259,13 @@ class InstaBlocker:
         return 0
 
     def run(self) -> None:
-        # self.app.run()
+        self.login_form.run()
         self.start_driver()
+        self.login(self.login_form.username, self.login_form.password)
+        self.authentication()
         return
 
 
 if __name__ == "__main__":
-    data = pd.read_excel('qusun.ny-劣質粉絲名單.xlsx', header=7)
-    filtered_urls = data[data['評分'] <= -55][data.columns[1]].tolist()
-
     insta_blocker = InstaBlocker()
     insta_blocker.run()
-    insta_blocker.login(MY_USERNAME, MY_PASSWORD)
-    insta_blocker.authentication()
-    insta_blocker.blockade(filtered_urls)
