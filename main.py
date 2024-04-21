@@ -117,6 +117,8 @@ class InstaBlocker:
         try:
             username_input = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input')
         except Exception as e:
+            print('User Already Logged In')
+            print(format(e))
             return 1
         
         username_input.clear()
@@ -129,12 +131,9 @@ class InstaBlocker:
         login_btn = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[3]/button')
         login_btn.click()
 
-        sleep(5)
+        return 0
 
-    def authentication(self): 
-        if self.driver.current_url != AUTHENTICATE_URL:
-            return
-        
+    def authentication(self) -> int:         
         try:
             verify_code_input = WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((By.XPATH, 
@@ -145,7 +144,13 @@ class InstaBlocker:
 
             verify_code_input.send_keys(verify_code)
         except Exception as e:
-            print(format(e))
+            if self.driver.current_url != AUTHENTICATE_URL:
+                return 1
+            else:
+                print('verify_code_input not found')
+                print(format(e))
+            
+                return -1
 
         confirm_btn = self.driver.find_element(By.XPATH, '/html/body/div[2]/div/div/div[2]/div/div/div[1]/section/main/div/div/div[1]/div[2]/form/div[2]/button')
         confirm_btn.click()
@@ -156,6 +161,7 @@ class InstaBlocker:
                 '/html/body/div[2]/div/div/div[2]/div/div/div[1]/div[1]/div[2]/section/main/div/div/div/div/div')))
             save_data_later_btn.click()
         except Exception as e:
+            print('save_data_later_btn not found')
             print(format(e))
 
         try:
@@ -164,11 +170,16 @@ class InstaBlocker:
                 '/html/body/div[3]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div[3]/button[2]')))
             turn_on_notifications_btn.click()
         except Exception as e:
+            print('turn_on_notifications_btn not found')
             print(format(e))
+        
+        return 0
 
-    def blockade(self, namelist) -> None:
+    def blockade(self, namelist) -> int:
         for username in namelist:
             self.driver.get(username)
+
+            url_split = username.split('/')
 
             try:
                 options_btn = WebDriverWait(self.driver, 10).until(
@@ -176,37 +187,49 @@ class InstaBlocker:
                     '/html/body/div[2]/div/div/div[2]/div/div/div[1]/div[1]/div[2]/div[2]/section/main/div/header/section/div[1]/div[3]/div')))
                 options_btn.click()
             except Exception as e:
+                print('options_btn not found')
                 print(format(e))
+                return -1
 
             try:
                 blockade_btn = WebDriverWait(self.driver, 10).until(
                     EC.presence_of_element_located((By.XPATH, 
-                    '/html/body/div[7]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div/button[1]')))
+                    '/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div/button[1]')))
             except Exception as e:
+                print('blockade_btn not found')
                 print(format(e))
+                return -1
             
             if blockade_btn.text == '解除封鎖':
+                print(f'{url_split[-1]} blocked already')
                 cancel_blockade_btn = self.driver.find_element(By.XPATH, '/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div/button[6]')
                 cancel_blockade_btn.click()
                 continue
             else:
                 blockade_btn.click()
+                print(f'{url_split[-1]} are blocked')
 
             try:
                 check_blockade_btn = WebDriverWait(self.driver, 10).until(
                     EC.presence_of_element_located((By.XPATH, 
-                    '/html/body/div[7]/div[1]/div/div[2]/div/div/div/div/div/div/div[2]/button[1]')))
+                    '/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div/div/div[2]/button[1]')))
                 check_blockade_btn.click()
             except Exception as e:
+                print('check_blockade_btn not found')
                 print(format(e))
+                return -1
 
             try:
                 close_blockade_btn = WebDriverWait(self.driver, 10).until(
                     EC.presence_of_element_located((By.XPATH, 
-                    '/html/body/div[7]/div[1]/div/div[2]/div/div/div/div/div/div/div[2]/button')))
+                    '/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div/div/div[2]/button')))
                 close_blockade_btn.click()
             except Exception as e:
+                print('close_blockade_btn not found')
                 print(format(e))
+                return -1
+            
+        return 0
 
     def run(self) -> None:
         # self.app.run()
