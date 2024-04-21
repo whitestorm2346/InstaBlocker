@@ -16,13 +16,11 @@ AUTHENTICATE_URL = 'https://www.instagram.com/accounts/login/two_factor?hl=zh&ne
 ENGLISH = 'Times New Roman'
 CHINESE = '微軟正黑體'
 
-class MainUI:
+class LoginForm:
     def __init__(self) -> None:
-        self.init_main_frame()
-        self.init_login_frame()
-        self.init_buttons()
-
-        self.threads = []  # init thread
+        self.__init_root__()
+        self.__init_login_frame__()
+        self.__init_buttons__()
 
     def __show_password_onclick__(self):
         if self.show_password_value.get():
@@ -30,22 +28,22 @@ class MainUI:
         else:
             self.password_entry.config(show='\u25CF')
 
-    def start_btn_onclick(self):
-        pass
+    def __start_button_onclick__(self):
+        # TODO: implement the empty value checking
 
-    def quit_btn_onclick(self):
-        pass
+        print('start button onclick')
+        self.root.destroy()
 
-    def init_main_frame(self) -> None:
+    def __init_root__(self):
         self.root = Tk()
         self.root.resizable(False, False)
-        self.root.geometry("350x350")
-        self.root.title('InstaBlocker')
+        self.root.geometry("300x300")
+        self.root.title('InstaBlocker Login')
 
-    def init_login_frame(self) -> None:
+    def __init_login_frame__(self):
         self.login_frame = LabelFrame(self.root)
-        self.login_frame.config(text=' Instagram Login ', font=(ENGLISH, 12))
-        self.login_frame.pack(side=TOP, fill='x', padx=10, pady=10)
+        self.login_frame.config(text=' Login ', font=(ENGLISH, 12))
+        self.login_frame.pack(side=TOP, fill='x', padx=10, pady=5)
 
         self.username_label = Label(self.login_frame)
         self.username_label.config(
@@ -80,41 +78,76 @@ class MainUI:
             variable=self.show_password_value, command=self.__show_password_onclick__)
         self.show_password_checkbox.pack(side=LEFT, padx=10)
 
-    def init_buttons(self) -> None:
+    def __init_buttons__(self):
+        self.control_frame = Frame(self.root)
+        self.control_frame.pack(side=TOP, fill='x', padx=15, pady=0)
+
         self.start_btn = Button(self.root)
         self.start_btn.config(text='start', font=(ENGLISH, 14, 'bold'),
-                              height=2, width=8, command=self.start_btn_onclick)
-        self.start_btn.pack(side=LEFT, padx=10)
-
-        self.quit_btn = Button(self.root)
-        self.quit_btn.config(text='quit', font=(ENGLISH, 14, 'bold'),
-                             height=2, width=8, command=self.quit_btn_onclick)
-        self.quit_btn.pack(side=LEFT, padx=15)
-
-    def run(self) -> None:
-        self.root.mainloop()
-
-class LoginForm:
-    def __init__(self) -> None:
-        self.username = ''
-        self.password = ''
+                              height=2, width=8, command=self.__start_button_onclick__)
+        self.start_btn.pack(side=TOP, padx=10, pady=5)
 
     def run(self):
-        pass
+        self.root.mainloop()
 
 class AuthenticateForm:
     def __init__(self) -> None:
-        self.verify_code = ''
+        self.__init_root__()
+        self.__init_authenticate_frame__()
+        self.__init_buttons__()
+
+    def __send_button_onclick__(self):
+        # TODO: implement the empty value checking
+
+        print('send button onclick')
+        self.root.destroy()
+
+    def __init_root__(self):
+        self.root = Tk()
+        self.root.resizable(False, False)
+        self.root.geometry("200x200")
+        self.root.title('Verify')
+
+    def __init_authenticate_frame__(self):
+        self.authenticate_frame = LabelFrame(self.root)
+        self.authenticate_frame.config(text=' Authentication ', font=(ENGLISH, 12))
+        self.authenticate_frame.pack(side=TOP, fill='x', padx=10, pady=5)
+
+        self.verify_code_label = Label(self.authenticate_frame)
+        self.verify_code_label.config(
+            text='Verify Code', font=(ENGLISH, 14, 'bold'))
+        self.verify_code_label.pack(side=TOP, pady=5)
+
+        self.verify_code = StringVar(self.authenticate_frame)
+        self.verify_code_entry = Entry(self.authenticate_frame)
+        self.verify_code_entry.config(
+            font=(ENGLISH, 12), textvariable=self.verify_code)
+        self.verify_code_entry.pack(side=TOP, fill='x', padx=5, pady=10)
+
+    def __init_buttons__(self):
+        self.control_frame = Frame(self.root)
+        self.control_frame.pack(side=TOP, fill='x', padx=15, pady=0)
+
+        self.send_btn = Button(self.root)
+        self.send_btn.config(text='send', font=(ENGLISH, 14, 'bold'),
+                              height=2, width=8, command=self.__send_button_onclick__)
+        self.send_btn.pack(side=TOP, padx=10, pady=5)
 
     def run(self):
-        pass
+        self.root.mainloop()
 
 class BlockadeLogView:
     def __init__(self) -> None:
-        pass
+        self.__init_root__()
+
+    def __init_root__(self):
+        self.root = Tk()
+        self.root.resizable(False, False)
+        self.root.geometry("350x600")
+        self.root.title('InstaBlocker Log View')
 
     def run(self):
-        pass
+        self.root.mainloop()
 
 class InstaBlocker:
     def __init__(self) -> None:
@@ -263,9 +296,17 @@ class InstaBlocker:
         self.start_driver()
         self.login(self.login_form.username, self.login_form.password)
         self.authentication()
-        return
 
 
 if __name__ == "__main__":
-    insta_blocker = InstaBlocker()
-    insta_blocker.run()
+    # login_form = LoginForm()
+    # login_form.run()
+
+    # authenticate_form = AuthenticateForm()
+    # authenticate_form.run()
+
+    blockade_log_view = BlockadeLogView()
+    blockade_log_view.run()
+
+    # insta_blocker = InstaBlocker()
+    # insta_blocker.run()
