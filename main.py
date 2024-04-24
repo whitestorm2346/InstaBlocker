@@ -1,3 +1,4 @@
+from platform import platform
 import threading
 from time import sleep
 from tkinter import *
@@ -139,12 +140,48 @@ class AuthenticateForm:
 class BlockadeLogView:
     def __init__(self) -> None:
         self.__init_root__()
+        self.__init_inner_frame__()
 
     def __init_root__(self):
         self.root = Tk()
         self.root.resizable(False, False)
-        self.root.geometry("350x600")
+        self.root.geometry("400x600")
         self.root.title('InstaBlocker Log View')
+
+    def __scrollbar_resize__(self, event):
+        size = (self.window_frame.winfo_reqwidth(),
+                self.window_frame.winfo_reqheight())
+        self.inner_canvas.config(scrollregion="0 0 %s %s" % size)
+
+        if self.window_frame.winfo_reqwidth() != self.inner_canvas.winfo_width():
+            self.inner_canvas.config(width=self.window_frame.winfo_reqwidth())
+
+
+    def __init_inner_frame__(self):
+        self.inner_frame = Frame(self.root)
+        self.inner_frame.pack(fill=BOTH, expand=True)
+
+        self.inner_canvas = Canvas(self.inner_frame)
+        self.inner_canvas.pack(side=LEFT, fill=BOTH, expand=True)
+
+        self.scrollbar = ttk.Scrollbar(self.inner_frame, orient=VERTICAL,
+                                       command=self.inner_canvas.yview)
+        self.scrollbar.pack(side=RIGHT, fill=Y)
+
+        self.inner_canvas.configure(yscrollcommand=self.scrollbar.set)
+        self.inner_canvas.bind('<Configure>', lambda e: self.inner_canvas.configure(
+            scrollregion=self.inner_canvas.bbox('all')))
+
+        self.window_frame = Frame(self.inner_canvas)
+
+        self.inner_canvas.create_window(
+            (0, 0), window=self.window_frame, anchor='nw')
+        self.window_frame.bind('<Configure>', self.__scrollbar_resize__)
+
+    def new_log(self, msg):
+        log = Label(self.window_frame)
+        log.config(text=msg, font=(ENGLISH, 14))
+        log.pack(side=BOTTOM)
 
     def run(self):
         self.root.mainloop()
@@ -152,8 +189,6 @@ class BlockadeLogView:
 class InstaBlocker:
     def __init__(self) -> None:
         self.login_form = LoginForm()
-        self.authenticate_form = AuthenticateForm()
-        self.blockade_log_view = BlockadeLogView()
 
         try:
             self.data = pd.read_excel('qusun.ny-劣質粉絲名單.xlsx', header=7)
@@ -174,7 +209,9 @@ class InstaBlocker:
         self.driver.get(INSTA_LOGIN_URL)
 
         try:
-            username_input = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input')
+            username_input = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, 
+                '//*[@id="loginForm"]/div/div[1]/div/label/input')))
         except Exception as e:
             print('User Already Logged In')
             print(format(e))
@@ -199,8 +236,9 @@ class InstaBlocker:
                 '/html/body/div[2]/div/div/div[2]/div/div/div[1]/section/main/div/div/div[1]/div[2]/form/div[1]/div/label/input')))
             verify_code_input.clear()
 
+            self.authenticate_form = AuthenticateForm()
             self.authenticate_form.run()
-            verify_code = self.authenticate_form.verify_code
+            verify_code = self.authenticate_form.verify_code.get()
 
             verify_code_input.send_keys(verify_code)
         except Exception as e:
@@ -252,22 +290,28 @@ class InstaBlocker:
                 return -1
 
             try:
-                blockade_btn = WebDriverWait(self.driver, 10).until(
+                blockade_btn = WebDriverWait(self.driver, 5).until(
                     EC.presence_of_element_located((By.XPATH, 
                     '/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div/button[1]')))
             except Exception as e:
-                print('blockade_btn not found')
-                print(format(e))
-                return -1
+                try:
+                    blockade_btn = WebDriverWait(self.driver, 3).until(
+                        EC.presence_of_element_located((By.XPATH, 
+                        '/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div/button[1]')))
+                except Exception as e:
+                    print('blockade_btn not found')
+                    print(format(e))
+                    self.blockade_log_view.new_log(f'{url_split[-1]} error: blockade_btn not found')
+                    continue
             
             if blockade_btn.text == '解除封鎖':
-                print(f'{url_split[-1]} blocked already')
+                self.blockade_log_view.new_log(f'{url_split[-1]} blocked already')
                 cancel_blockade_btn = self.driver.find_element(By.XPATH, '/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div/button[6]')
                 cancel_blockade_btn.click()
                 continue
             else:
                 blockade_btn.click()
-                print(f'{url_split[-1]} are blocked')
+                self.blockade_log_view.new_log(f'{url_split[-1]} are blocked')
 
             try:
                 check_blockade_btn = WebDriverWait(self.driver, 10).until(
@@ -277,7 +321,8 @@ class InstaBlocker:
             except Exception as e:
                 print('check_blockade_btn not found')
                 print(format(e))
-                return -1
+                self.blockade_log_view.new_log(f'{url_split[-1]} error: check_blockade_btn not found')
+                continue
 
             try:
                 close_blockade_btn = WebDriverWait(self.driver, 10).until(
@@ -287,26 +332,27 @@ class InstaBlocker:
             except Exception as e:
                 print('close_blockade_btn not found')
                 print(format(e))
-                return -1
+                self.blockade_log_view.new_log(f'{url_split[-1]} error: close_btn not found')
+                continue
             
         return 0
+
+    def __run_blockade__(self):
+        self.blockade(self.namelist)
 
     def run(self) -> None:
         self.login_form.run()
         self.start_driver()
-        self.login(self.login_form.username, self.login_form.password)
+        self.login(self.login_form.username.get(), self.login_form.password.get())
         self.authentication()
+
+        blockade_thread = threading.Thread(target=self.__run_blockade__)
+        blockade_thread.start()
+
+        self.blockade_log_view = BlockadeLogView()
+        self.blockade_log_view.run()
 
 
 if __name__ == "__main__":
-    # login_form = LoginForm()
-    # login_form.run()
-
-    # authenticate_form = AuthenticateForm()
-    # authenticate_form.run()
-
-    blockade_log_view = BlockadeLogView()
-    blockade_log_view.run()
-
-    # insta_blocker = InstaBlocker()
-    # insta_blocker.run()
+    insta_blocker = InstaBlocker()
+    insta_blocker.run()
