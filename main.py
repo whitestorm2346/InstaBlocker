@@ -11,6 +11,8 @@ from selenium.webdriver.support import expected_conditions as EC
 import chromedriver_autoinstaller
 import pandas as pd
 
+DATA_FILE = 'test.xlsx'
+
 INSTA_LOGIN_URL = 'https://www.instagram.com/?hl=zh' 
 AUTHENTICATE_URL = 'https://www.instagram.com/accounts/login/two_factor?hl=zh&next=%2F'
 
@@ -188,8 +190,12 @@ class BlockadeLogView:
 
 class InstaBlocker:
     def __init__(self) -> None:
+        self.__init_data__()
+        
         self.login_form = LoginForm()
+        
 
+    def __init_data__(self):
         try:
             self.data = pd.read_excel('qusun.ny-劣質粉絲名單.xlsx', header=7)
         except Exception as e:
@@ -197,6 +203,13 @@ class InstaBlocker:
             exit(1)
 
         self.namelist = self.data[self.data['評分'] <= -55][self.data.columns[1]].tolist()
+
+    def __update_data__(self):
+        header = pd.read_excel(DATA_FILE, nrows=7)
+
+        with pd.ExcelWriter(DATA_FILE, engine='openpyxl') as writer:
+            header.to_excel(writer, index=False)
+            self.data.to_excel(writer, index=False, header=False, startrow=8)
 
     def start_driver(self) -> None:
         chrome_option = chromeOptions()
@@ -352,7 +365,24 @@ class InstaBlocker:
         self.blockade_log_view = BlockadeLogView()
         self.blockade_log_view.run()
 
+        self.__update_data__()
+
 
 if __name__ == "__main__":
-    insta_blocker = InstaBlocker()
-    insta_blocker.run()
+    try:
+        data = pd.read_excel(DATA_FILE, header=7)
+        header = pd.read_excel(DATA_FILE, nrows=7)
+    except Exception as e:
+        print(f'{DATA_FILE} not found')
+        exit(1)
+
+    filtered_data = data[data['評分'] <= -55]
+
+    print(filtered_data)
+
+    with pd.ExcelWriter(DATA_FILE, engine='openpyxl') as writer:
+        header.to_excel(writer, index=False)
+        filtered_data.to_excel(writer, index=False, header=False, startrow=8)
+
+    # insta_blocker = InstaBlocker()
+    # insta_blocker.run()
