@@ -287,30 +287,37 @@ class InstaBlocker:
         return 0
 
     def blockade(self, namelist) -> int:
-        for username in namelist:
+        for username in namelist[:]:
             self.driver.get(username)
 
             url_split = username.split('/')
 
             try:
-                options_btn = WebDriverWait(self.driver, 10).until(
+                options_btn = WebDriverWait(self.driver, 5).until(
                     EC.presence_of_element_located((By.XPATH, 
-                    '/html/body/div[2]/div/div/div[2]/div/div/div[1]/div[1]/div[2]/div[2]/section/main/div/header/section/div[1]/div[3]/div')))
+                    '/html/body/div[2]/div/div/div[2]/div/div/div[1]/div[1]/div[2]/div[2]/section/main/div/header/section[2]/div/div/div[3]/div')))
                 options_btn.click()
             except Exception as e:
-                print('options_btn not found')
-                print(format(e))
-                return -1
+                try:
+                    options_btn = WebDriverWait(self.driver, 3).until(
+                        EC.presence_of_element_located((By.XPATH, 
+                        '/html/body/div[2]/div/div/div[2]/div/div/div[1]/div[1]/div[2]/div[2]/section/main/div/header/section[2]/div/div[1]/div[2]/div')))
+                    options_btn.click()
+                except Exception as e:
+                    print('options_btn not found')
+                    print(format(e))
+                    self.blockade_log_view.new_log(f'{url_split[-1]} error: options_btn not found')
+                    continue
 
             try:
                 blockade_btn = WebDriverWait(self.driver, 5).until(
                     EC.presence_of_element_located((By.XPATH, 
-                    '/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div/button[1]')))
+                    '/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div/button[1]')))
             except Exception as e:
                 try:
                     blockade_btn = WebDriverWait(self.driver, 3).until(
                         EC.presence_of_element_located((By.XPATH, 
-                        '/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div/button[1]')))
+                        '/html/body/div[7]/div[1]/div/div[2]/div/div/div/div/div/button[1]')))
                 except Exception as e:
                     print('blockade_btn not found')
                     print(format(e))
@@ -319,12 +326,19 @@ class InstaBlocker:
             
             if blockade_btn.text == '解除封鎖':
                 self.blockade_log_view.new_log(f'{url_split[-1]} blocked already')
-                cancel_blockade_btn = self.driver.find_element(By.XPATH, '/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div/button[6]')
-                cancel_blockade_btn.click()
+
+                try:
+                    cancel_blockade_btn = self.driver.find_element(By.XPATH, '/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div/button[6]')
+                    cancel_blockade_btn.click()
+                except Exception as e:
+                    print(format(e))
+
                 continue
             else:
                 blockade_btn.click()
                 self.blockade_log_view.new_log(f'{url_split[-1]} are blocked')
+
+            namelist.remove(username)
 
             try:
                 check_blockade_btn = WebDriverWait(self.driver, 10).until(
@@ -347,6 +361,8 @@ class InstaBlocker:
                 print(format(e))
                 self.blockade_log_view.new_log(f'{url_split[-1]} error: close_btn not found')
                 continue
+
+        self.namelist = namelist
             
         return 0
 
@@ -369,20 +385,5 @@ class InstaBlocker:
 
 
 if __name__ == "__main__":
-    try:
-        data = pd.read_excel(DATA_FILE, header=7)
-        header = pd.read_excel(DATA_FILE, nrows=7)
-    except Exception as e:
-        print(f'{DATA_FILE} not found')
-        exit(1)
-
-    filtered_data = data[data['評分'] <= -55]
-
-    print(filtered_data)
-
-    with pd.ExcelWriter(DATA_FILE, engine='openpyxl') as writer:
-        header.to_excel(writer, index=False)
-        filtered_data.to_excel(writer, index=False, header=False, startrow=8)
-
-    # insta_blocker = InstaBlocker()
-    # insta_blocker.run()
+    insta_blocker = InstaBlocker()
+    insta_blocker.run()
