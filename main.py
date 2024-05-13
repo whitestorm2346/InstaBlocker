@@ -202,13 +202,14 @@ class InstaBlocker:
             'password_input': '//*[@id="loginForm"]/div/div[2]/div/label/input',
             'login_button': '//button[normalize-space()="登入"]',
             'verify_code_input': '/html/body/div[2]/div/div/div[2]/div/div/div[1]/section/main/div/div/div[1]/div[2]/form/div[1]/div/label/input',
-            'confirm_button': '/html/body/div[2]/div/div/div[2]/div/div/div[1]/section/main/div/div/div[1]/div[2]/form/div[2]/button',
-            'save_data_later_button': '/html/body/div[2]/div/div/div[2]/div/div/div[1]/div[1]/div[2]/section/main/div/div/div/div/div',
-            'turn_on_notifications_button': '/html/body/div[3]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div[3]/button[2]',
-            'blockade_button': '/html/body/div[7]/div[1]/div/div[2]/div/div/div/div/div/button[1]',
-            'cancel_blockade_button': '/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div/button[6]',
-            'check_blockade_button': '/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div/div/div[2]/button[1]',
-            'close_blockade_button': '/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div/div/div[2]/button',
+            'confirm_button': '//button[normalize-space()="確認"]',
+            'save_data_later_button': '//button[normalize-space()="稍後再說"]',
+            'turn_on_notifications_button': '//button[normalize-space()="開啟通知"]',
+            'blockade_button': '//button[normalize-space()="封鎖"]',
+            'remove_blockade_button': '//button[normalize-space()="解除封鎖"]',
+            'cancel_blockade_button': '//button[normalize-space()="取消"]',
+            'inner_div': '/html/body/div[7]/div[1]/div/div[2]/div/div/div/div/div/div/div[2]',
+            'close_blockade_button': '//button[normalize-space()="關閉"]',
 
             # BY CSS SELECTOR
             'options_button': '[aria-label="選項"]'
@@ -284,24 +285,6 @@ class InstaBlocker:
 
         confirm_btn = self.driver.find_element(By.XPATH, self.path['confirm_button'])
         confirm_btn.click()
-
-        try:
-            save_data_later_btn = WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, 
-                self.path['save_data_later_button'])))
-            save_data_later_btn.click()
-        except Exception as e:
-            print('save_data_later_btn not found')
-            print(format(e))
-
-        try:
-            turn_on_notifications_btn = WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, 
-                self.path['turn_on_notifications_button'])))
-            turn_on_notifications_btn.click()
-        except Exception as e:
-            print('turn_on_notifications_btn not found')
-            print(format(e))
         
         return 0
 
@@ -323,16 +306,9 @@ class InstaBlocker:
                 continue
 
             try:
-                blockade_btn = WebDriverWait(self.driver, 5).until(
+                remove_blockade_btn = WebDriverWait(self.driver, 1).until(
                     EC.presence_of_element_located((By.XPATH, 
-                    self.path['blockade_button'])))
-            except Exception as e:
-                print('blockade_btn not found')
-                print(format(e))
-                self.blockade_log_view.new_log(f'{url_split[-1]} error: blockade_btn not found')
-                continue
-            
-            if blockade_btn.text == '解除封鎖':
+                    self.path['remove_blockade_button'])))
                 self.blockade_log_view.new_log(f'{url_split[-1]} blocked already')
 
                 try:
@@ -342,17 +318,28 @@ class InstaBlocker:
                     print(format(e))
 
                 continue
-            else:
-                blockade_btn.click()
-                self.blockade_log_view.new_log(f'{url_split[-1]} are blocked')
-
-            namelist.remove(username)
+            except Exception as e:
+                try:
+                    blockade_btn = WebDriverWait(self.driver, 1).until(
+                        EC.presence_of_element_located((By.XPATH, 
+                        self.path['blockade_button'])))
+                except Exception as e:
+                    print('blockade_btn not found')
+                    print(format(e))
+                    self.blockade_log_view.new_log(f'{url_split[-1]} error: blockade_btn not found')
+                    continue
+            
+            blockade_btn.click()
 
             try:
-                check_blockade_btn = WebDriverWait(self.driver, 10).until(
+                div = WebDriverWait(self.driver, 3).until(
                     EC.presence_of_element_located((By.XPATH, 
-                    self.path['check_blockade_button'])))
-                check_blockade_btn.click()
+                    self.path['inner_div'])))
+                btns = div.find_elements(By.TAG_NAME, 'button')
+                btns[0].click()
+
+                self.blockade_log_view.new_log(f'{url_split[-1]} are blocked')
+                namelist.remove(username)
             except Exception as e:
                 print('check_blockade_btn not found')
                 print(format(e))
@@ -360,7 +347,7 @@ class InstaBlocker:
                 continue
 
             try:
-                close_blockade_btn = WebDriverWait(self.driver, 10).until(
+                close_blockade_btn = WebDriverWait(self.driver, 3).until(
                     EC.presence_of_element_located((By.XPATH, 
                     self.path['close_blockade_button'])))
                 close_blockade_btn.click()
