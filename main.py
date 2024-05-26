@@ -85,7 +85,7 @@ class LoginForm:
         self.control_frame = Frame(self.root)
         self.control_frame.pack(side=TOP, fill='x', padx=15, pady=0)
 
-        self.start_btn = Button(self.root)
+        self.start_btn = Button(self.control_frame)
         self.start_btn.config(text='start', font=(ENGLISH, 14, 'bold'),
                               height=2, width=8, command=self.__start_button_onclick__)
         self.start_btn.pack(side=TOP, padx=10, pady=5)
@@ -131,7 +131,7 @@ class AuthenticateForm:
         self.control_frame = Frame(self.root)
         self.control_frame.pack(side=TOP, fill='x', padx=15, pady=0)
 
-        self.send_btn = Button(self.root)
+        self.send_btn = Button(self.control_frame)
         self.send_btn.config(text='send', font=(ENGLISH, 14, 'bold'),
                               height=2, width=8, command=self.__send_button_onclick__)
         self.send_btn.pack(side=TOP, padx=10, pady=5)
@@ -140,9 +140,12 @@ class AuthenticateForm:
         self.root.mainloop()
 
 class BlockadeLogView:
-    def __init__(self) -> None:
+    def __init__(self, is_abort) -> None:
         self.__init_root__()
         self.__init_inner_frame__()
+        self.__init_buttons__()
+
+        self.is_aborted = is_abort
 
     def __init_root__(self):
         self.root = Tk()
@@ -158,6 +161,8 @@ class BlockadeLogView:
         if self.window_frame.winfo_reqwidth() != self.inner_canvas.winfo_width():
             self.inner_canvas.config(width=self.window_frame.winfo_reqwidth())
 
+    def __abort_blockade__(self):
+        self.is_aborted = True
 
     def __init_inner_frame__(self):
         self.inner_frame = Frame(self.root)
@@ -179,6 +184,15 @@ class BlockadeLogView:
         self.inner_canvas.create_window(
             (0, 0), window=self.window_frame, anchor='nw')
         self.window_frame.bind('<Configure>', self.__scrollbar_resize__)
+
+    def __init_buttons__(self):
+        self.control_frame = Frame(self.root)
+        self.control_frame.pack(side=BOTTOM, fill='x', padx=15, pady=0)
+
+        self.start_btn = Button(self.control_frame)
+        self.start_btn.config(text='abort', font=(ENGLISH, 14, 'bold'),
+                              height=2, width=8, command=self.__abort_blockade__)
+        self.start_btn.pack(side=TOP, padx=10, pady=5)
 
     def new_log(self, msg):
         log = Label(self.window_frame)
@@ -290,6 +304,9 @@ class InstaBlocker:
 
     def blockade(self, namelist) -> int:
         for username in namelist[:]:
+            if self.is_aborted:
+                break
+
             self.driver.get(username)
 
             url_split = username.split('/')
@@ -370,12 +387,18 @@ class InstaBlocker:
         self.login(self.login_form.username.get(), self.login_form.password.get())
         self.authentication()
 
+        sleep(3)
+
+        self.is_aborted = False
+
         blockade_thread = threading.Thread(target=self.__run_blockade__)
         blockade_thread.start()
 
-        self.blockade_log_view = BlockadeLogView()
+        self.blockade_log_view = BlockadeLogView(self.is_aborted)
         self.blockade_log_view.run()
 
+        blockade_thread.join()
+        self.blockade_log_view.root.destroy()
         self.__update_data__()
 
 
