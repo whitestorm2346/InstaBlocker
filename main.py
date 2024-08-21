@@ -174,110 +174,120 @@ class InstaBlocker:
 
         blockced = []
 
-        for username in self.namelist:
-            url_split = username.split('/')
+        try: 
+            for username in self.namelist:
+                url_split = username.split('/')
 
-            if is_aborted:
-                break
+                if is_aborted:
+                    break
 
-            print('\n' + Style.BRIGHT + '[account] ' + Fore.CYAN + f'{url_split[-1]}')
+                print('\n' + Style.BRIGHT + '[account] ' + Fore.CYAN + f'{url_split[-1]}')
 
-            self.driver.get(username)
-
-            try:
-                options_btn = WebDriverWait(self.driver, 5).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, 
-                    self.path['options_button'])))
-                options_btn.click()
-            except TimeoutException as e:
-                try:
-                    print(Style.BRIGHT + '[status] ' + Fore.LIGHTRED_EX + 'account not found')
-                    self.blockade_log_view.new_log(f'{url_split[-1]} error: account not found')
-                except Exception as e:
-                    pass
-
-                blockced.append(username)
-
-                continue
-
-            try:
-                remove_blockade_btn = WebDriverWait(self.driver, 1).until(
-                    EC.presence_of_element_located((By.XPATH, 
-                    self.path['remove_blockade_button'])))
-                
-                try:
-                    print(Style.BRIGHT + '[status] ' + Fore.YELLOW + 'blocked already')
-                    self.blockade_log_view.new_log(f'{url_split[-1]} blocked already')
-                except Exception as e:
-                    pass
+                self.driver.get(username)
 
                 try:
-                    cancel_blockade_btn = self.driver.find_element(By.XPATH, self.path['cancel_blockade_button'])
-                    cancel_blockade_btn.click()
-                except NoSuchElementException as e:
-                    print(Fore.RED + 'cancel_blockade_btn not found')
-
-                blockced.append(username)
-
-                continue
-            except TimeoutException as e:
-                try:
-                    blockade_btn = WebDriverWait(self.driver, 1).until(
-                        EC.presence_of_element_located((By.XPATH, 
-                        self.path['blockade_button'])))
+                    options_btn = WebDriverWait(self.driver, 5).until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, 
+                        self.path['options_button'])))
+                    options_btn.click()
                 except TimeoutException as e:
-                    print(Fore.RED + 'blockade_btn not found')
+                    try:
+                        print(Style.BRIGHT + '[status] ' + Fore.LIGHTRED_EX + 'account not found')
+                        self.blockade_log_view.new_log(f'{url_split[-1]} error: account not found')
+                    except Exception as e:
+                        pass
+
+                    blockced.append(username)
+
+                    continue
+
+                try:
+                    remove_blockade_btn = WebDriverWait(self.driver, 1).until(
+                        EC.presence_of_element_located((By.XPATH, 
+                        self.path['remove_blockade_button'])))
+                    
+                    try:
+                        print(Style.BRIGHT + '[status] ' + Fore.YELLOW + 'blocked already')
+                        self.blockade_log_view.new_log(f'{url_split[-1]} blocked already')
+                    except Exception as e:
+                        pass
 
                     try:
-                        self.blockade_log_view.new_log(f'{url_split[-1]} error: blockade_btn not found')
+                        cancel_blockade_btn = self.driver.find_element(By.XPATH, self.path['cancel_blockade_button'])
+                        cancel_blockade_btn.click()
+                    except NoSuchElementException as e:
+                        print(Fore.RED + 'cancel_blockade_btn not found')
+
+                    blockced.append(username)
+
+                    continue
+                except TimeoutException as e:
+                    try:
+                        blockade_btn = WebDriverWait(self.driver, 1).until(
+                            EC.presence_of_element_located((By.XPATH, 
+                            self.path['blockade_button'])))
+                    except TimeoutException as e:
+                        print(Fore.RED + 'blockade_btn not found')
+
+                        try:
+                            self.blockade_log_view.new_log(f'{url_split[-1]} error: blockade_btn not found')
+                        except Exception as e:
+                            pass
+
+                        continue
+                
+                blockade_btn.click()
+
+                try:
+                    div = WebDriverWait(self.driver, 3).until(
+                        EC.presence_of_element_located((By.XPATH, 
+                        self.path['inner_div'])))
+                    btns = div.find_elements(By.TAG_NAME, 'button')
+                    btns[0].click()
+
+                    print(Style.BRIGHT + '[status] ' + Fore.LIGHTGREEN_EX + 'blockade success')
+
+                    try:
+                        self.blockade_log_view.new_log(f'{url_split[-1]} are blocked')
+                    except Exception as e:
+                        pass
+
+                    blockced.append(username)
+                except TimeoutException as e:
+                    print(Fore.RED + 'check_blockade_btn not found')
+
+                    try:
+                        self.blockade_log_view.new_log(f'{url_split[-1]} error: check_blockade_btn not found')
                     except Exception as e:
                         pass
 
                     continue
-            
-            blockade_btn.click()
-
-            try:
-                div = WebDriverWait(self.driver, 3).until(
-                    EC.presence_of_element_located((By.XPATH, 
-                    self.path['inner_div'])))
-                btns = div.find_elements(By.TAG_NAME, 'button')
-                btns[0].click()
-
-                print(Style.BRIGHT + '[status] ' + Fore.LIGHTGREEN_EX + 'blockade success')
 
                 try:
-                    self.blockade_log_view.new_log(f'{url_split[-1]} are blocked')
-                except Exception as e:
-                    pass
+                    close_blockade_btn = WebDriverWait(self.driver, 3).until(
+                        EC.presence_of_element_located((By.XPATH, 
+                        self.path['close_blockade_button'])))
+                    close_blockade_btn.click()
+                except TimeoutException as e:
+                    print(Fore.RED + 'close_blockade_btn not found')
 
-                blockced.append(username)
-            except TimeoutException as e:
-                print(Fore.RED + 'check_blockade_btn not found')
+                    try:
+                        self.blockade_log_view.new_log(f'{url_split[-1]} error: close_btn not found')
+                    except Exception as e:
+                        pass
 
-                try:
-                    self.blockade_log_view.new_log(f'{url_split[-1]} error: check_blockade_btn not found')
-                except Exception as e:
-                    pass
+                    continue
 
-                continue
+            self.namelist = list(set(self.namelist) - set(blockced))
+        except Exception as e:
+            self.namelist = list(set(self.namelist) - set(blockced))
 
-            try:
-                close_blockade_btn = WebDriverWait(self.driver, 3).until(
-                    EC.presence_of_element_located((By.XPATH, 
-                    self.path['close_blockade_button'])))
-                close_blockade_btn.click()
-            except TimeoutException as e:
-                print(Fore.RED + 'close_blockade_btn not found')
+            print(Fore.RED + 'blockade() throws an exception!')
+            print(Fore.YELLOW + 'Updating Data...')
 
-                try:
-                    self.blockade_log_view.new_log(f'{url_split[-1]} error: close_btn not found')
-                except Exception as e:
-                    pass
+            self.__update_data__()
 
-                continue
-
-        self.namelist = list(set(self.namelist) - set(blockced))
+            print(Fore.YELLOW + 'Finished Updating...')
             
         return 0
 
