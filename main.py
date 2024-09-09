@@ -4,6 +4,8 @@ from tkinter import ttk
 from selenium import webdriver  # for operating the website
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options as chromeOptions
+from selenium.webdriver.edge.options import Options as edgeOptions
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
@@ -162,12 +164,21 @@ class InstaBlocker:
             header.to_excel(writer, index=False)
             self.data.to_excel(writer, index=False, header=False, startrow=8)
 
-    def start_driver(self) -> None:
-        chrome_option = chromeOptions()
-        chrome_option.add_argument('--log-level=3')
-        chrome_option.add_argument('--start-maximized')
-        chromedriver_autoinstaller.install()
-        self.driver = webdriver.Chrome(options=chrome_option)
+    def start_driver(self, type='chrome') -> None:
+        if type == 'chrome':
+            chrome_option = chromeOptions()
+            chrome_option.add_argument('--log-level=3')
+            chrome_option.add_argument('--start-maximized')
+            chromedriver_autoinstaller.install()
+            self.driver = webdriver.Chrome(options=chrome_option)
+        elif type == 'edge':
+            edge_option = edgeOptions()
+            edge_option.add_argument('--log-level=3')
+            edge_option.add_argument('--start-maximized')
+            self.driver = webdriver.Edge(
+                executable_path=EdgeChromiumDriverManager().install(),
+                options=edge_option
+            )
         
     def blockade(self) -> int:
         global is_aborted
@@ -298,7 +309,13 @@ class InstaBlocker:
     def run(self) -> None:
         global is_aborted
 
-        self.start_driver()
+        try:
+            print(Fore.YELLOW + 'Chrome driver set up...')
+            self.start_driver()
+        except Exception as e:
+            print(Fore.RED + 'Chrome driver set up error...')
+            print(Fore.YELLOW + 'Edge driver set up...')
+            self.start_driver('edge')
 
         self.driver.get(INSTA_LOGIN_URL)
 
